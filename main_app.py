@@ -18,6 +18,7 @@ st.set_page_config(
 # =========================
 ARTIFACTS_DIR = Path("artifacts")
 
+# Updated feature columns to match Colab export exactly
 DEFAULT_FEATURE_COLS = [
     "rainfall", "relative_humidity", "temp_mid",
     "cases_lag_1", "cases_lag_2", "cases_lag_3",
@@ -115,7 +116,7 @@ if meta:
     st.sidebar.success(f"Best Model: {meta.get('best_model', 'Unknown')}")
     threshold_val = meta.get("outbreak_threshold_cases", meta.get("threshold", "N/A"))
     if isinstance(threshold_val, (int, float)):
-        st.sidebar.info(f"Outbreak Threshold: {threshold_val:.2f}")
+        st.sidebar.info(f"Outbreak Threshold: {threshold_val:.2f} cases")
     else:
         st.sidebar.info(f"Outbreak Threshold: {threshold_val}")
 else:
@@ -130,7 +131,7 @@ with st.sidebar.expander("Manual file upload", expanded=False):
     uploaded_files["feature_sensitivity"] = st.file_uploader("feature_sensitivity.csv", type=["csv"])
     uploaded_files["forecast"] = st.file_uploader("forecast_5yr.csv", type=["csv"])
     uploaded_files["barangay_monthly"] = st.file_uploader("barangay_monthly.csv", type=["csv"])
-    uploaded_files["top_barangay_monthly"] = st.file_uploader("top_barangay_monthly.csv / monthly_top_barangay.csv", type=["csv"])
+    uploaded_files["top_barangay_monthly"] = st.file_uploader("top_barangay_monthly.csv", type=["csv"])
     uploaded_files["top3_barangays_yearly"] = st.file_uploader("top3_barangays_yearly.csv", type=["csv"])
     uploaded_files["top3_barangays_overall"] = st.file_uploader("top3_barangays_overall.csv", type=["csv"])
     uploaded_files["test_predictions"] = st.file_uploader("test_predictions.csv", type=["csv"])
@@ -140,7 +141,7 @@ with st.sidebar.expander("Manual file upload", expanded=False):
     uploaded_files["forecast_top3_barangays"] = st.file_uploader("forecast_top3_barangays.csv", type=["csv"])
     uploaded_files["barangay_risk_profile"] = st.file_uploader("barangay_risk_profile.csv", type=["csv"])
     uploaded_meta = st.file_uploader("meta.json", type=["json"])
-    uploaded_model = st.file_uploader("best_model.joblib / best_model.pkl", type=["joblib", "pkl"])
+    uploaded_model = st.file_uploader("best_model.joblib", type=["joblib", "pkl"])
 
 for key, uploaded in uploaded_files.items():
     if uploaded is not None:
@@ -271,14 +272,28 @@ def build_climate_case_correlation(monthly_df):
 
 
 def normalize_model_comparison(model_df, auc_table):
+    """Rename columns to match dashboard expectations"""
     if model_df is None or model_df.empty:
         return model_df
 
     model_df = model_df.copy()
-    # Support both revised Colab naming styles: auc and AUC.
-    if "AUC" in model_df.columns and "auc" not in model_df.columns:
-        model_df = model_df.rename(columns={"AUC": "auc"})
-
+    
+    # Rename columns to match dashboard expectations
+    col_renames = {
+        "Model": "model",
+        "F1 Score": "f1_score",
+        "Precision": "precision",
+        "Recall": "recall",
+        "Reliability (Brier)": "brier",
+        "AUC (Supplementary)": "auc",
+    }
+    model_df = model_df.rename(columns={k: v for k, v in col_renames.items() if k in model_df.columns})
+    
+    # Ensure required columns exist
+    if "model" not in model_df.columns:
+        return model_df
+    
+    # Add AUC from auc_table if available
     if "auc" not in model_df.columns and auc_table is not None and not auc_table.empty:
         auc_tmp = auc_table.copy()
         if "AUC" in auc_tmp.columns and "auc" not in auc_tmp.columns:
@@ -412,6 +427,7 @@ def outbreak_label_from_binary(x):
         return "Unknown"
 
 
+# Pre-process data for dashboard
 month_profile = complete_month_profile(month_profile, monthly)
 model_comparison = normalize_model_comparison(model_comparison, auc_df)
 if climate_case_correlation is None or climate_case_correlation.empty:
@@ -625,11 +641,12 @@ with tab3:
         st.success(f"Selected Model: {meta.get('best_model', 'Unknown')}")
 
     if model_comparison is not None and not model_comparison.empty:
-        display_cols = [c for c in ["model", "accuracy", "precision", "recall", "f1_score", "auc", "n_test_months"] if c in model_comparison.columns]
+        # Display available columns
+        display_cols = [c for c in ["model", "f1_score", "precision", "recall", "auc"] if c in model_comparison.columns]
         display_df = round_display_columns(model_comparison[display_cols], [c for c in display_cols if c != "model"], decimals=4)
         st.dataframe(display_df, use_container_width=True)
 
-        metric_cols = [c for c in ["accuracy", "precision", "recall", "f1_score", "auc"] if c in model_comparison.columns]
+        metric_cols = [c for c in ["f1_score", "precision", "recall", "auc"] if c in model_comparison.columns]
         if "model" in model_comparison.columns and metric_cols:
             st.subheader("Model Comparison by Metric")
             results_long = model_comparison.melt(
@@ -676,6 +693,9 @@ with tab4:
 
     st.subheader("Primary Contributing Features")
     if feature_importance is not None and not feature_importance.empty:
+        # Ensure correct column names
+        if "importance_mean" not in feature_importance.columns and "importance" in feature_importance.columns:
+            feature_importance = feature_importance.rename(columns={"importance": "importance_mean"})
         st.dataframe(round_display_columns(feature_importance, ["importance_mean", "importance_std"], 6), use_container_width=True)
         if {"feature", "importance_mean"}.issubset(feature_importance.columns):
             fig_importance = px.bar(
@@ -691,6 +711,9 @@ with tab4:
 
     st.subheader("Sensitivity Analysis")
     if feature_sensitivity is not None and not feature_sensitivity.empty:
+        # Ensure correct column names
+        if "change_in_probability" in feature_sensitivity.columns:
+            feature_sensitivity = feature_sensitivity.rename(columns={"change_in_probability": "delta_probability"})
         st.dataframe(round_display_columns(feature_sensitivity, ["base_avg_outbreak_probability", "new_avg_outbreak_probability", "delta_probability"], 6), use_container_width=True)
         if {"feature", "delta_probability"}.issubset(feature_sensitivity.columns):
             fig_sens = px.bar(
@@ -752,18 +775,19 @@ with tab5:
 
         if "Date" in forecast_top3_barangays.columns and {"Barangay", "predicted_barangay_cases_proxy"}.issubset(forecast_top3_barangays.columns):
             month_options = forecast_top3_barangays["Date"].dropna().astype(str).unique().tolist()
-            selected_month = st.selectbox("Select forecast month for barangay ranking", month_options)
-            selected_barangay_forecast = forecast_top3_barangays[forecast_top3_barangays["Date"].astype(str) == selected_month].copy()
-            fig_barangay_forecast = px.bar(
-                round_display_columns(selected_barangay_forecast, ["predicted_barangay_cases_proxy"], decimals=2),
-                x="Barangay",
-                y="predicted_barangay_cases_proxy",
-                color="Barangay",
-                text="predicted_barangay_cases_proxy",
-                title=f"Three Barangays with the Highest Predicted Risk - {selected_month}",
-            )
-            fig_barangay_forecast.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-            st.plotly_chart(fig_barangay_forecast, use_container_width=True)
+            if month_options:
+                selected_month = st.selectbox("Select forecast month for barangay ranking", month_options)
+                selected_barangay_forecast = forecast_top3_barangays[forecast_top3_barangays["Date"].astype(str) == selected_month].copy()
+                fig_barangay_forecast = px.bar(
+                    round_display_columns(selected_barangay_forecast, ["predicted_barangay_cases_proxy"], decimals=2),
+                    x="Barangay",
+                    y="predicted_barangay_cases_proxy",
+                    color="Barangay",
+                    text="predicted_barangay_cases_proxy",
+                    title=f"Three Barangays with the Highest Predicted Risk - {selected_month}",
+                )
+                fig_barangay_forecast.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                st.plotly_chart(fig_barangay_forecast, use_container_width=True)
     else:
         st.warning("forecast_top3_barangays.csv is unavailable.")
 
@@ -958,4 +982,4 @@ with tab5:
                 st.warning("barangay_risk_profile.csv is unavailable.")
 
 st.markdown("---")
-st.caption("Baguio City Dengue Forecast Dashboard | Revised Colab-ready version")
+st.caption("Baguio City Dengue Outbreak Forecast Dashboard")

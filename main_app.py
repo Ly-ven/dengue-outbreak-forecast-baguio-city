@@ -761,48 +761,15 @@ with tab1:
     else:
         st.warning("Heatmap requires Year, Month, and CHSO_cases columns.")
 
-    chart_col1, chart_col2 = st.columns(2)
-    with chart_col1:
-        st.subheader("Climate-Case Correlation")
-        if climate_case_correlation is not None and not climate_case_correlation.empty:
-            corr_display = round_display_columns(climate_case_correlation, ["pearson_corr_with_CHSO_cases"], 4)
-            st.dataframe(corr_display, use_container_width=True, hide_index=True)
-            if {"feature", "pearson_corr_with_CHSO_cases"}.issubset(climate_case_correlation.columns):
-                fig_corr = px.bar(
-                    corr_display,
-                    x="feature",
-                    y="pearson_corr_with_CHSO_cases",
-                    text="pearson_corr_with_CHSO_cases",
-                    title="Climate-Case Correlation",
-                )
-                fig_corr.update_traces(texttemplate="%{text:.4f}", textposition="outside")
-                st.plotly_chart(fig_corr, use_container_width=True)
-        else:
-            st.warning("Climate correlation table is unavailable.")
+    st.subheader("Climate-Case Correlation")
+    fig_corr = px.bar(climate_case_correlation, x="feature", y="pearson_corr_with_CHSO_cases", text="pearson_corr_with_CHSO_cases")
+    st.plotly_chart(fig_corr, use_container_width=True)
+    st.dataframe(climate_case_correlation, use_container_width=True)
 
-    with chart_col2:
-        st.subheader("Average Monthly Profile")
-        if month_profile is not None and not month_profile.empty:
-            display_cols = [
-                col
-                for col in ["Month", "MonthName", "CHSO_cases", "rainfall", "relative_humidity", "temp_mid"]
-                if col in month_profile.columns
-            ]
-            numeric_cols = [col for col in display_cols if col != "MonthName"]
-            st.dataframe(round_display_columns(month_profile[display_cols], numeric_cols, 2), use_container_width=True, hide_index=True)
-            if {"MonthName", "CHSO_cases"}.issubset(month_profile.columns):
-                month_display = round_display_columns(month_profile, ["CHSO_cases"], 2)
-                fig_month = px.bar(
-                    month_display,
-                    x="MonthName",
-                    y="CHSO_cases",
-                    text="CHSO_cases",
-                    title="Average CHSO Cases by Month",
-                )
-                fig_month.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-                st.plotly_chart(fig_month, use_container_width=True)
-        else:
-            st.warning("month_profile.csv is unavailable.")
+    st.subheader("Average Monthly Profile")
+    fig_month = px.bar(month_profile, x="MonthName", y="CHSO_cases", text="CHSO_cases")
+    st.plotly_chart(fig_month, use_container_width=True)
+    st.dataframe(month_profile, use_container_width=True)
 
     st.subheader("Climate Profile of Outbreak vs Non-outbreak Months")
     if {"outbreak", "rainfall", "relative_humidity", "temp_mid"}.issubset(monthly.columns):

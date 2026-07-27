@@ -1009,6 +1009,7 @@ with tab4:
                 x="importance_mean",
                 y="feature",
                 orientation="h",
+                color_continuous_scale="Turbo",
                 title="Top 15 Primary Contributing Features",
             )
             st.plotly_chart(fig_importance, use_container_width=True)

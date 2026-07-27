@@ -1006,25 +1006,64 @@ with tab4:
             "delta_probability",
             "percent_change",
         ]
-        st.dataframe(round_display_columns(feature_sensitivity, sens_numeric_cols, 6), use_container_width=True, hide_index=True)
+        st.dataframe(
+            round_display_columns(feature_sensitivity, sens_numeric_cols, 6),
+            use_container_width=True,
+            hide_index=True,
+        )
+    
         if {"feature", "delta_probability"}.issubset(feature_sensitivity.columns):
-            sens_plot = round_display_columns(feature_sensitivity, ["delta_probability"], 6)
+            sens_plot = round_display_columns(
+                feature_sensitivity,
+                ["delta_probability"],
+                6,
+            ).copy()
+    
+            sens_plot["color"] = np.where(
+                sens_plot["delta_probability"] < 0,
+                "Negative",
+                "Positive",
+            )
+    
             fig_sens = px.bar(
                 sens_plot,
-                x="feature",
-                y="delta_probability",
+                x="delta_probability",
+                y="feature",
+                orientation="h",
+                color="color",
+                color_discrete_map={
+                    "Positive": "green",
+                    "Negative": "crimson",
+                },
                 text="delta_probability",
-                title="Effect of +10% Change in Climate Variables on Outbreak Probability",
+                title="Sensitivity Analysis: Effect of +10% Change in Climate Variables",
             )
-            fig_sens.update_traces(texttemplate="%{text:.6f}", textposition="outside")
+    
+            fig_sens.update_traces(
+                texttemplate="%{text:.4f}",
+                textposition="outside",
+            )
+    
+            fig_sens.update_layout(
+                showlegend=False,
+                xaxis_title="Change in Average Outbreak Probability",
+                yaxis_title="Climate Variable",
+            )
+    
+            fig_sens.add_vline(
+                x=0,
+                line_width=2,
+                line_color="gray",
+            )
+    
             st.plotly_chart(fig_sens, use_container_width=True)
+    
     else:
         st.warning("feature_sensitivity.csv is unavailable.")
-
+    
     st.info(
         "Feature importance and sensitivity analysis explain model behavior. These outputs support interpretability but do not prove direct biological causation."
     )
-
 
 # =============================================================================
 # TAB 5: FORECAST & LIVE PREDICTION

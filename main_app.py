@@ -1036,7 +1036,7 @@ with tab4:
                     "Negative": "crimson",
                 },
                 text="delta_probability",
-                title="Sensitivity Analysis: Effect of +10% Change in Climate Variables",
+                title="Effect of +10% Change in Climate Variables on Outbreak Probability",
             )
     
             fig_sens.update_traces(

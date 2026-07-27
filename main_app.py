@@ -212,7 +212,6 @@ def load_joblib_artifact(file_names, uploaded_zip_bytes=None):
     return joblib.load(BytesIO(raw)), source
 
 
-@st.cache_data(show_spinner=False)
 def load_artifacts(uploaded_zip_bytes=None):
     loaded = {}
     sources = {}

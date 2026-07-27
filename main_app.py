@@ -1052,8 +1052,8 @@ with tab4:
                 orientation="h",
                 color="color",
                 color_discrete_map={
-                    "Positive": "lightgreen",
-                    "Negative": "crimson",
+                    "Positive": "#66BB6A",
+                    "Negative": "#E73F1E",
                 },
                 text="delta_probability",
                 title="Sensitivity Analysis: Effect of +10% Change in Climate Variables",

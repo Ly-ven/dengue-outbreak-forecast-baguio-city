@@ -733,7 +733,7 @@ with tab1:
                 title="Monthly Dengue Cases: CHSO and DOH Comparison",
                 color_discrete_map={
                     "CHSO_cases": "#AE75DA",
-                    "DOH_cases": "#0D1164"   
+                    "DOH_cases": "#4382DF"   
                 }
             )
         else:

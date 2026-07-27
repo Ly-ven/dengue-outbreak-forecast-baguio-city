@@ -1337,9 +1337,16 @@ with tab5:
                 prob = np.nan
 
             result_col1, result_col2 = st.columns(2)
-            result_col1.success(f"Predicted Class: {outbreak_label_from_binary(pred)}")
+
+            if pred == 1:
+                result_col1.error("Predicted Class: Outbreak")
+            else:
+                result_col1.success("Predicted Class: Non-outbreak")
+            
             result_col2.info(
-                f"Predicted Outbreak Probability: {prob:.4f}" if not pd.isna(prob) else "Probability not available"
+                f"Predicted Outbreak Probability: {prob:.4f}"
+                if not pd.isna(prob)
+                else "Probability not available"
             )
 
             st.caption("0 = Non-outbreak month; 1 = Outbreak month. Probability is the model's estimated likelihood of the outbreak class.")

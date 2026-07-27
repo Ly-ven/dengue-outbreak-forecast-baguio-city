@@ -1052,7 +1052,7 @@ with tab4:
                 orientation="h",
                 color="color",
                 color_discrete_map={
-                    "Positive": "darkgreen",
+                    "Positive": "lightgreen",
                     "Negative": "crimson",
                 },
                 text="delta_probability",

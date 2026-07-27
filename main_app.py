@@ -391,19 +391,32 @@ def normalize_model_comparison(model_df, auc_table=None):
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
-
 def normalize_feature_sensitivity(feature_sensitivity_df):
     if feature_sensitivity_df is None or feature_sensitivity_df.empty:
         return feature_sensitivity_df
+
     df = feature_sensitivity_df.copy()
+
     df = df.rename(
         columns={
-            "new_avg_outbreak_probability (10% increase)": "new_avg_outbreak_probability",
+            # Base probability
+            "base_avg_outbreak_prob": "base_avg_outbreak_probability",
+            "base_avg_outbreak_probability": "base_avg_outbreak_probability",
+
+            # New probability after +10% increase
+            "new_avg_outbreak_proba": "new_avg_outbreak_probability",
+            "new_avg_outbreak_probability (10% increase)":
+                "new_avg_outbreak_probability",
+
+            # Change in probability
             "change_in_probability": "delta_probability",
+
+            # Percentage change
+            "percent_change": "percent_change",
         }
     )
-    return df
 
+    return df
 
 def get_profile_value(month_num, col_name, month_profile_df=None, fallback_df=None, default=0.0):
     if month_profile_df is not None and not month_profile_df.empty and "Month" in month_profile_df.columns:
@@ -999,20 +1012,28 @@ with tab4:
         st.warning("feature_importance.csv is unavailable.")
 
     st.subheader("Sensitivity Analysis")
+
     if feature_sensitivity is not None and not feature_sensitivity.empty:
         sens_numeric_cols = [
             "base_avg_outbreak_probability",
-            "new_avg_outbreak_probability (10% increase)",
-            "change_in_probability",
+            "new_avg_outbreak_probability",
+            "delta_probability",
             "percent_change",
         ]
+    
         st.dataframe(
-            round_display_columns(feature_sensitivity, sens_numeric_cols, 6),
+            round_display_columns(
+                feature_sensitivity,
+                sens_numeric_cols,
+                6,
+            ),
             use_container_width=True,
             hide_index=True,
         )
     
-        if {"feature", "delta_probability"}.issubset(feature_sensitivity.columns):
+        if {"feature", "delta_probability"}.issubset(
+            feature_sensitivity.columns
+        ):
             sens_plot = round_display_columns(
                 feature_sensitivity,
                 ["delta_probability"],
@@ -1032,16 +1053,17 @@ with tab4:
                 orientation="h",
                 color="color",
                 color_discrete_map={
-                    "Positive": "#66BB6A",
+                    "Positive": "darkgreen",
                     "Negative": "crimson",
                 },
                 text="delta_probability",
-                title="Effect of +10% Change in Climate Variables on Outbreak Probability",
+                title="Sensitivity Analysis: Effect of +10% Change in Climate Variables",
             )
     
             fig_sens.update_traces(
                 texttemplate="%{text:.4f}",
                 textposition="outside",
+                cliponaxis=False,
             )
     
             fig_sens.update_layout(
@@ -1052,17 +1074,22 @@ with tab4:
     
             fig_sens.add_vline(
                 x=0,
-                line_width=2,
-                line_color="gray",
+                line_width=1,
+                line_color="black",
             )
     
-            st.plotly_chart(fig_sens, use_container_width=True)
+            st.plotly_chart(
+                fig_sens,
+                use_container_width=True,
+            )
     
     else:
         st.warning("feature_sensitivity.csv is unavailable.")
     
     st.info(
-        "Feature importance and sensitivity analysis explain model behavior. These outputs support interpretability but do not prove direct biological causation."
+        "Feature importance and sensitivity analysis explain model behavior. "
+        "These outputs support interpretability but do not prove direct "
+        "biological causation."
     )
 
 # =============================================================================

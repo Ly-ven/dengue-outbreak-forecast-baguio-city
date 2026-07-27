@@ -947,10 +947,15 @@ with tab3:
     st.subheader("How to Read the Metrics")
     st.markdown(
         """
-**Accuracy** measures the overall percentage of correct classifications. **Precision** measures how often predicted outbreak months are actually outbreaks. **Recall/Sensitivity** measures how many actual outbreak months the model catches. **F1 score** balances precision and recall. **AUC** summarizes how well the model separates outbreak from non-outbreak months across decision thresholds. **Brier score** measures probability reliability, where a lower score is better.
-"""
+    - **Accuracy** – Measures the overall percentage of correct classifications.
+    - **Precision** – Measures how often predicted outbreak months are actual outbreaks.
+    - **Recall/Sensitivity** – Measures how many actual outbreak months the model correctly detects.
+    - **F1 Score** – Balances precision and recall in one metric.
+    - **AUC** – Measures how well the model separates outbreak from non-outbreak months across different decision thresholds.
+    - **Brier Score** – Measures the reliability of predicted probabilities; a lower score is better.
+    """
     )
-
+    
     st.subheader("Month-by-Month Test Predictions")
     if test_predictions is not None and not test_predictions.empty:
         total_test = len(test_predictions)

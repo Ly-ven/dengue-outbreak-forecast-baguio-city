@@ -731,6 +731,10 @@ with tab1:
                 color="Source",
                 markers=True,
                 title="Monthly Dengue Cases: CHSO and DOH Comparison",
+                color_discrete_map={
+                    "CHSO_cases": "#723EC3",
+                    "DOH_cases": "#1f77b4"   
+                }
             )
         else:
             fig_line = px.line(

@@ -1,0 +1,4 @@
+feature,base_avg_outbreak_probability,new_avg_outbreak_probability (10% increase),change_in_probability,percent_change
+rainfall,0.40042958,0.4017293,0.0012997091,0.3245787
+temp_mid,0.40042958,0.4009024,0.00047281384,0.11807665
+relative_humidity,0.40042958,0.3651422,-0.03528738,-8.812382

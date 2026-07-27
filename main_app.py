@@ -830,7 +830,7 @@ with tab2:
                     path=["Year", "Barangay"],
                     values="Barangay_cases",
                     color="Barangay_cases",
-                    color_continuous_scale="Turbo",
+                    color_continuous_scale=px.colors.sequential.Plasma[::-1],
                     title="Three Barangays with the Highest Dengue Cases per Year",
                     height=650,
                 )

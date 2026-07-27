@@ -1002,8 +1002,8 @@ with tab4:
     if feature_sensitivity is not None and not feature_sensitivity.empty:
         sens_numeric_cols = [
             "base_avg_outbreak_probability",
-            "new_avg_outbreak_probability",
-            "delta_probability",
+            "new_avg_outbreak_probability (10% increase)",
+            "change_in_probability",
             "percent_change",
         ]
         st.dataframe(

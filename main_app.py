@@ -1272,7 +1272,7 @@ with tab5:
             )
         with climate_col3:
             temp_now = st.slider(
-                "Current Temperature / temp_mid",
+                "Current Temperature (°C)",
                 min_value=float(round(temp_min, 2)),
                 max_value=float(round(temp_max, 2)),
                 value=float(round(temp_default, 2)),

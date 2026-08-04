@@ -1202,7 +1202,7 @@ with tab3:
     st.caption(
         "These ranges are a practical dashboard guide, not "
         "universal official cutoffs. They are aligned with the "
-        "labels displayed in the result table and graph tooltips."
+        "interpretation labels displayed in the graph tooltips."
     )
     
     st.dataframe(

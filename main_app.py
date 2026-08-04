@@ -681,42 +681,6 @@ def build_metric_guide_df():
         ],
     )
 
-def build_interpreted_results(model_df):
-    if (
-        model_df is None
-        or model_df.empty
-        or "model" not in model_df.columns
-    ):
-        return None
-
-    result = pd.DataFrame(
-        {"Model": model_df["model"].astype(str)}
-    )
-
-    metric_columns = [
-        ("accuracy", "Accuracy"),
-        ("precision", "Precision"),
-        ("recall", "Recall"),
-        ("f1_score", "F1"),
-        ("brier", "Brier"),
-        ("auc", "AUC"),
-    ]
-
-    for metric, label in metric_columns:
-        if metric in model_df.columns:
-            result[label] = model_df[metric].apply(
-                lambda value: (
-                    "N/A"
-                    if pd.isna(safe_to_float(value, np.nan))
-                    else (
-                        f"{safe_to_float(value):.4f} — "
-                        f"{interpret_metric(metric, value)}"
-                    )
-                )
-            )
-
-    return result
-
 # =============================================================================
 # SIDEBAR: LOAD ZIP OR FOLDER
 # =============================================================================

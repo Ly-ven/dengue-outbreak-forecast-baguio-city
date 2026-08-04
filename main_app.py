@@ -1256,19 +1256,6 @@ with tab3:
     """
     )
     
-    interpreted_results = build_interpreted_results(
-        model_comparison
-    )
-    
-    if interpreted_results is not None:
-        st.subheader("Interpretation of the Results")
-    
-        st.dataframe(
-            interpreted_results,
-            use_container_width=True,
-            hide_index=True,
-        )
-    
     st.subheader("Month-by-Month Test Predictions")
     if test_predictions is not None and not test_predictions.empty:
         total_test = len(test_predictions)

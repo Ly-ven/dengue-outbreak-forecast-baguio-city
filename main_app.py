@@ -1279,6 +1279,63 @@ with tab4:
     else:
         st.warning("feature_importance.csv is unavailable.")
 
+    st.subheader("User Guide: Meaning of Each Feature")
+
+    with st.expander(
+        "View feature definitions",
+        expanded=False,
+    ):
+        st.markdown(
+            """
+### Current-Month Climate Features
+
+- **rainfall** – Total rainfall for the target month, measured in millimeters.
+- **relative_humidity** – Average relative humidity for the target month, expressed as a percentage.
+- **temp_mid** – The monthly midpoint or representative temperature used by the model. It must follow the same temperature calculation used during model training.
+
+### Previous Dengue Case Features
+
+- **cases_lag_1** – Number of dengue cases one month before the target month.
+- **cases_lag_2** – Number of dengue cases two months before the target month.
+- **cases_lag_3** – Number of dengue cases three months before the target month.
+
+### Previous Rainfall Features
+
+- **rainfall_lag_1** – Rainfall recorded one month before the target month.
+- **rainfall_lag_2** – Rainfall recorded two months before the target month.
+- **rainfall_lag_3** – Rainfall recorded three months before the target month.
+
+### Previous Relative Humidity Features
+
+- **relative_humidity_lag_1** – Relative humidity one month before the target month.
+- **relative_humidity_lag_2** – Relative humidity two months before the target month.
+- **relative_humidity_lag_3** – Relative humidity three months before the target month.
+
+### Previous Temperature Features
+
+- **temp_mid_lag_1** – Midpoint temperature one month before the target month.
+- **temp_mid_lag_2** – Midpoint temperature two months before the target month.
+- **temp_mid_lag_3** – Midpoint temperature three months before the target month.
+
+### Rolling Dengue Case Features
+
+- **cases_roll3_mean** – Average number of dengue cases during the previous three months.
+- **cases_roll3_max** – Highest number of dengue cases recorded during the previous three months.
+
+### Seasonal Features
+
+- **month_sin** – Sine transformation of the month used to represent the annual seasonal cycle.
+- **month_cos** – Cosine transformation of the month used with `month_sin` so the model recognizes that December and January are consecutive months.
+
+### How to Read the Results
+
+- A **higher feature-importance value** means the model relied more strongly on that feature when making predictions.
+- A **positive sensitivity value** means that increasing the feature raised the predicted outbreak probability.
+- A **negative sensitivity value** means that increasing the feature lowered the predicted outbreak probability.
+- Feature importance and sensitivity describe model behavior; they do not prove that a feature directly causes dengue outbreaks.
+"""
+        )
+
     st.subheader("Sensitivity Analysis")
 
     if feature_sensitivity is not None and not feature_sensitivity.empty:

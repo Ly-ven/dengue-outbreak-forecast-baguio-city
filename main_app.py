@@ -1261,7 +1261,7 @@ with tab3:
     )
     
     if interpreted_results is not None:
-        st.subheader("Interpretation of Your Results")
+        st.subheader("Interpretation of the Results")
     
         st.dataframe(
             interpreted_results,

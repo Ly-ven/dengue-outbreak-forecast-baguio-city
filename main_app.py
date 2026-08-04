@@ -555,6 +555,167 @@ def get_feature_columns(meta, feature_columns_json, model_obj):
         return list(model_obj.feature_names_in_)
     return DEFAULT_FEATURE_COLS
 
+def interpret_metric(metric, value):
+    value = safe_to_float(value, np.nan)
+
+    if pd.isna(value):
+        return "N/A"
+
+    metric = str(metric).lower()
+
+    if metric == "accuracy":
+        if value >= 0.90:
+            return "Excellent"
+        elif value >= 0.80:
+            return "Good"
+        elif value >= 0.70:
+            return "Moderate"
+        return "Weak"
+
+    if metric == "precision":
+        if value >= 0.90:
+            return "Excellent"
+        elif value >= 0.70:
+            return "Good"
+        elif value >= 0.65:
+            return "Moderate"
+        return "Weak"
+
+    if metric == "recall":
+        if value >= 0.90:
+            return "Excellent"
+        elif value >= 0.70:
+            return "Good"
+        elif value >= 0.50:
+            return "Moderate"
+        return "Weak"
+
+    if metric == "f1_score":
+        if value >= 0.90:
+            return "Excellent"
+        elif value >= 0.80:
+            return "Good"
+        elif value >= 0.70:
+            return "Moderate"
+        return "Weak"
+
+    if metric == "auc":
+        if value >= 0.90:
+            return "Excellent"
+        elif value >= 0.70:
+            return "Acceptable"
+        elif value >= 0.50:
+            return "Weak"
+        return "Below Chance"
+
+    if metric == "brier":
+        if value <= 0.09:
+            return "Strongest"
+        elif value <= 0.10:
+            return "Strong"
+        elif value <= 0.20:
+            return "Moderate"
+        return "Weak"
+
+    return "Not Interpreted"
+
+def build_metric_guide_df():
+    return pd.DataFrame(
+        [
+            [
+                "Accuracy",
+                "0.90–1.00",
+                "0.80–0.89",
+                "0.70–0.79",
+                "Below 0.70",
+                "Higher is better",
+            ],
+            [
+                "Precision",
+                "0.90–1.00",
+                "0.70–0.89",
+                "0.65–0.69",
+                "Below 0.65",
+                "Higher is better",
+            ],
+            [
+                "Recall",
+                "0.90–1.00",
+                "0.70–0.89",
+                "0.50–0.69",
+                "Below 0.50",
+                "Higher is better",
+            ],
+            [
+                "F1 Score",
+                "0.90–1.00",
+                "0.80–0.89",
+                "0.70–0.79",
+                "Below 0.70",
+                "Higher is better",
+            ],
+            [
+                "AUC",
+                "0.90–1.00",
+                "0.70–0.89",
+                "0.50–0.69",
+                "Below 0.50",
+                "Higher is better",
+            ],
+            [
+                "Brier Score",
+                "0.00–0.09",
+                ">0.09–0.10",
+                ">0.10–0.20",
+                "Above 0.20",
+                "Lower is better",
+            ],
+        ],
+        columns=[
+            "Metric",
+            "Excellent / Strongest",
+            "Good / Strong",
+            "Moderate / Acceptable",
+            "Weak / Below Chance",
+            "Direction",
+        ],
+    )
+
+def build_interpreted_results(model_df):
+    if (
+        model_df is None
+        or model_df.empty
+        or "model" not in model_df.columns
+    ):
+        return None
+
+    result = pd.DataFrame(
+        {"Model": model_df["model"].astype(str)}
+    )
+
+    metric_columns = [
+        ("accuracy", "Accuracy"),
+        ("precision", "Precision"),
+        ("recall", "Recall"),
+        ("f1_score", "F1"),
+        ("brier", "Brier"),
+        ("auc", "AUC"),
+    ]
+
+    for metric, label in metric_columns:
+        if metric in model_df.columns:
+            result[label] = model_df[metric].apply(
+                lambda value: (
+                    "N/A"
+                    if pd.isna(safe_to_float(value, np.nan))
+                    else (
+                        f"{safe_to_float(value):.4f} — "
+                        f"{interpret_metric(metric, value)}"
+                    )
+                )
+            )
+
+    return result
 
 # =============================================================================
 # SIDEBAR: LOAD ZIP OR FOLDER
@@ -906,41 +1067,155 @@ with tab3:
         display_df = round_display_columns(model_comparison[display_cols], numeric_display_cols, 4)
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-        metric_cols = [col for col in ["accuracy", "f1_score", "precision", "recall", "auc"] if col in model_comparison.columns]
+        metric_cols = [
+            col
+            for col in [
+                "accuracy",
+                "f1_score",
+                "precision",
+                "recall",
+                "auc",
+            ]
+            if col in model_comparison.columns
+        ]
+        
         if "model" in model_comparison.columns and metric_cols:
             st.subheader("Model Comparison by Classification Metric")
+        
             results_long = model_comparison.melt(
                 id_vars="model",
                 value_vars=metric_cols,
                 var_name="Metric",
                 value_name="Score",
             )
-            results_long = round_display_columns(results_long, ["Score"], 4)
+        
+            results_long["Score"] = pd.to_numeric(
+                results_long["Score"],
+                errors="coerce",
+            )
+        
+            metric_name_map = {
+                "accuracy": "Accuracy",
+                "precision": "Precision",
+                "recall": "Recall",
+                "f1_score": "F1 Score",
+                "auc": "AUC",
+            }
+        
+            results_long["Metric Label"] = (
+                results_long["Metric"]
+                .map(metric_name_map)
+                .fillna(results_long["Metric"])
+            )
+        
+            results_long["Rating"] = results_long.apply(
+                lambda row: interpret_metric(
+                    row["Metric"],
+                    row["Score"],
+                ),
+                axis=1,
+            )
+        
+            results_long["Hover Result"] = results_long.apply(
+                lambda row: (
+                    "N/A"
+                    if pd.isna(row["Score"])
+                    else f"{row['Score']:.3f} — {row['Rating']}"
+                ),
+                axis=1,
+            )
+        
             fig_model = px.bar(
                 results_long,
                 x="model",
                 y="Score",
-                color="Metric",
+                color="Metric Label",
                 barmode="group",
                 text="Score",
+                custom_data=[
+                    "Metric Label",
+                    "Hover Result",
+                ],
                 title="Model Comparison by Metric",
             )
-            fig_model.update_traces(texttemplate="%{text:.4f}", textposition="outside")
-            fig_model.update_yaxes(range=[0, 1.15])
-            st.plotly_chart(fig_model, use_container_width=True)
+        
+            fig_model.update_traces(
+                texttemplate="%{text:.4f}",
+                textposition="outside",
+                hovertemplate=(
+                    "<b>Model:</b> %{x}<br>"
+                    "<b>Metric:</b> %{customdata[0]}<br>"
+                    "<b>Result:</b> %{customdata[1]}<br>"
+                    "<b>Direction:</b> Higher is better"
+                    "<extra></extra>"
+                ),
+            )
+        
+            fig_model.update_yaxes(
+                range=[0, 1.15],
+                title="Score",
+            )
+        
+            st.plotly_chart(
+                fig_model,
+                use_container_width=True,
+            )
 
         if {"model", "brier"}.issubset(model_comparison.columns):
             st.subheader("Reliability Score")
-            brier_display = round_display_columns(model_comparison[["model", "brier"]], ["brier"], 4)
+        
+            brier_display = model_comparison[
+                ["model", "brier"]
+            ].copy()
+        
+            brier_display["brier"] = pd.to_numeric(
+                brier_display["brier"],
+                errors="coerce",
+            )
+        
+            brier_display["Rating"] = brier_display[
+                "brier"
+            ].apply(
+                lambda value: interpret_metric("brier", value)
+            )
+        
+            brier_display["Hover Result"] = brier_display.apply(
+                lambda row: (
+                    "N/A"
+                    if pd.isna(row["brier"])
+                    else (
+                        f"{row['brier']:.4f} — "
+                        f"{row['Rating']}"
+                    )
+                ),
+                axis=1,
+            )
+        
             fig_brier = px.bar(
                 brier_display,
                 x="model",
                 y="brier",
                 text="brier",
+                custom_data=["Hover Result"],
                 title="Reliability (Brier Score: lower is better)",
             )
-            fig_brier.update_traces(texttemplate="%{text:.4f}", textposition="outside")
-            st.plotly_chart(fig_brier, use_container_width=True)
+        
+            fig_brier.update_traces(
+                texttemplate="%{text:.4f}",
+                textposition="outside",
+                hovertemplate=(
+                    "<b>Model:</b> %{x}<br>"
+                    "<b>Metric:</b> Brier Score<br>"
+                    "<b>Result:</b> %{customdata[0]}<br>"
+                    "<b>Direction:</b> Lower is better"
+                    "<extra></extra>"
+                ),
+            )
+        
+            st.plotly_chart(
+                fig_brier,
+                use_container_width=True,
+            )
     else:
         st.warning("model_comparison.csv is unavailable.")
 
@@ -955,6 +1230,44 @@ with tab3:
     - **Brier Score** – Measures the reliability of predicted probabilities; a lower score is better.
     """
     )
+
+    st.subheader(
+        "General Guide for Interpreting Model Performance Metrics"
+    )
+    
+    st.caption(
+        "These ranges are a practical dashboard guide, not "
+        "universal official cutoffs. They are aligned with the "
+        "labels displayed in the result table and graph tooltips."
+    )
+    
+    st.dataframe(
+        build_metric_guide_df(),
+        use_container_width=True,
+        hide_index=True,
+    )
+    
+    st.markdown(
+        """
+    For **Accuracy, Precision, Recall, F1 Score, and AUC**,
+    higher values are better.
+    
+    For the **Brier Score**, lower values are better.
+    """
+    )
+    
+    interpreted_results = build_interpreted_results(
+        model_comparison
+    )
+    
+    if interpreted_results is not None:
+        st.subheader("Interpretation of Your Results")
+    
+        st.dataframe(
+            interpreted_results,
+            use_container_width=True,
+            hide_index=True,
+        )
     
     st.subheader("Month-by-Month Test Predictions")
     if test_predictions is not None and not test_predictions.empty:
